@@ -27,7 +27,7 @@ from utils import render_template, fuzzy_find
 from account import as_admin
 from openlibrary.plugins.recaptcha import recaptcha
 from . import spamcheck
-
+import pdb
 logger = logging.getLogger("openlibrary.book")
 
 SYSTEM_SUBJECTS = ["Accessible Book", "Lending Library", "In Library", "Protected DAISY"]
@@ -72,8 +72,18 @@ def new_doc(type, **data):
     data['type'] = {"key": type}
     return web.ctx.site.new(key, data)
 
+def get_recapture():
+    recap_plugin_active = is_plugin_enabled('recaptcha')
+    if recap_plugin_active:
+        public_key = config.plugin_recaptcha.public_key
+        private_key = config.plugin_recaptcha.private_key
+        recap = recaptcha.Recaptcha(public_key, private_key)
+    else:
+        recap = None
+    return recap
+
 class DocSaveHelper:
-    """Simple utility to collct the saves and save all of the togeter at the end.
+    """Simple utility to collect the saves and save them together at the end.
     """
     def __init__(self):
         self.docs = []
@@ -89,6 +99,13 @@ class DocSaveHelper:
         """Saves all the collected docs."""
         if self.docs:
             web.ctx.site.save_many(self.docs, **kw)
+
+class NoSaveHelper(DocSaveHelper):
+    """Imitates the DocSaveHelper above to implement Stealth Banning.
+    """
+
+    def commit(self, **kw):
+        pass
 
 def is_plugin_enabled(name):
     plugin_names = delegate.get_plugins()
@@ -123,10 +140,6 @@ class addbook(delegate.page):
     def POST(self):
         i = web.input(title="", author_name="", author_key="", publisher="", publish_date="", id_name="", id_value="", _test="false")
 
-        if spamcheck.is_spam(i):
-            return render_template("message.html", 
-                "Oops", 
-                'Something went wrong. Please try again later.')
 
         recap_plugin_active = is_plugin_enabled('recaptcha')
         if recap_plugin_active and not web.ctx.site.get_user():
@@ -137,6 +150,21 @@ class addbook(delegate.page):
             if not recap.validate():
                 return 'Recaptcha solution was incorrect. Please <a href="javascript:history.back()">go back</a> and try again.'
 
+        if spamcheck.is_spam(i):
+            #pdb.set_trace()
+            fake_work = new_doc("/type/work",
+                title=i.title,
+                #authors=[{"author": {"key": i.author_key}}]
+            )
+
+            fake_edition = self._make_edition(fake_work, i)
+            fake_edition.works[0] = fake_work
+            #pdb.set_trace()
+            return render_template('books/edit', fake_work, fake_edition, recaptcha=get_recapture())
+           # return self.no_match(NoSaveHelper(), i)
+           # return render_template("message.html",
+           #     "Oops",
+           #     'Something went wrong. Please try again later.')
         saveutil = DocSaveHelper()
 
         match = self.find_matches(saveutil, i)
@@ -717,7 +745,7 @@ class work_edit(delegate.page):
 
         if spamcheck.is_spam():
             return render_template("message.html", 
-                "Oops", 
+                "Oops",
                 'Something went wrong. Please try again later.')
 
         recap_plugin_active = is_plugin_enabled('recaptcha')
