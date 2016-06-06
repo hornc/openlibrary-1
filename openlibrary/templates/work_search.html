@@ -181,8 +181,15 @@ function less(header) {
                 <!-- facet_map: $:facet_map -->
                 <!-- facet_counts: $:facet_counts -->
                 <p class="collapse darkgray"><span class="tools"><img src="/images/icons/icon_search-facet.png" alt="Search facets" width="11" height="10" style="margin-right:5px;"/><strong>
+
                 $for header, label in facet_map:
+                    </br>
+                    [ HEADER: $header ]</br>
+                    [ PARAM: $param ]</br>
+                    !!! $facet_counts[header] !!!
                     $ counts = facet_counts[header]
+                    <!-- Need to iterate over header params ... do not need counts at all here? Have to handle multiple subject facets etc -->
+                    </br>COUNTS: $counts</br>
                     $for k, display, count in counts:
                         $if k not in param.get(header, []):
                             $continue
