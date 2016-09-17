@@ -66,6 +66,8 @@ def test_commify():
     assert h.commify(1234) == "1,234"
     assert h.commify(1234567) == "1,234,567"
 
+    # Indian separators (Telugu)
+    # comma divides every two digits to the left of the last three
     assert h.commify(123, lang="te") == "123"
     assert h.commify(1234, lang="te") == "1,234"
     assert h.commify(1234567, lang="te") == "12,34,567"
