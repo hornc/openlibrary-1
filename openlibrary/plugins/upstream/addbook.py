@@ -631,6 +631,8 @@ class book_edit(delegate.page):
                 'title': edition.title,
                 'authors': [{'type': '/type/author_role', 'author': {'key': a['key']}} for a in edition.get('authors', [])]
             })
+            if 'subjects' in edition:
+                work['subjects'] = edition.subjects
 
         return render_template('books/edit', work, edition, recaptcha=get_recaptcha())
 
