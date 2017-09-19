@@ -1,8 +1,9 @@
 'Merge editions'
 import web, re
+import copy
 from openlibrary.utils import uniq, dicthash
 from infogami.utils import delegate
-from infogami.utils.view import render_template
+from infogami.utils.view import render_template, add_flash_message
 from collections import defaultdict
 
 re_nonword = re.compile(r'\W', re.U)
@@ -14,7 +15,7 @@ class merge_editions(delegate.page):
         return "merge-editions" in web.ctx.features
 
     def GET(self):
-        i = web.input(key=[],merge_key=[])
+        i = web.input(key=[], merge_key=[])
         keys = uniq(i.key)
         merge_keys = uniq(i.merge_key)
         assert all(k is not None for k in merge_keys)
@@ -35,7 +36,8 @@ class merge_editions(delegate.page):
                 if e[k] is not None and e[k] != {}:
                     all_keys.add(k)
 
-        merged = {}
+        merged = copy.copy(master)
+        #merged = {}
         possible_values = defaultdict(lambda: defaultdict(int))
 
         k = 'publish_date'
@@ -98,7 +100,14 @@ class merge_editions(delegate.page):
                         merged[k].append(sr)
 
         for k in all_keys:
-            if k in ('source_records', 'ia_box_id', 'identifiers', 'ocaid', 'other_titles', 'series'):
+            if k in ('source_records', 'ia_box_id', 'identifiers', 'other_titles', 'series'):
+                continue
+            if k == 'table_of_contents':
+                for e in editions:
+                    if e.get('table_of_contents'):
+                        merged['table_of_contents'] = e.get_toc_text()
+                        break
+                assert merged['table_of_contents']
                 continue
             uniq_values = defaultdict(list)
             for num, e in enumerate(editions):
@@ -150,7 +159,15 @@ class merge_editions(delegate.page):
                 assert merged['ocaid']
                 continue
 
+        debug = " %s :: %s" % (master, merged)
+        add_flash_message("info", "You GETted an Edition Merge!" + debug )
         return render_template('merge/editions2', master, editions, all_keys, merged, possible_values)
+
+    def POST(self):
+        result = self.GET()
+        debug = " %s :: %s" % (master, merged)
+        add_flash_message("info", "You posted an Edition Merge!" + debug )
+        return result
 
 def setup():
     pass

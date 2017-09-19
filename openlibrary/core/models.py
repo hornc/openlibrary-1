@@ -200,7 +200,7 @@ class Edition(Thing):
         return self.title or "untitled"
 
     def __repr__(self):
-        return "<Edition: %s>" % repr(self.title)
+        return "<Edition: %s -- %s>" % (repr(self.key), repr(self.title))
     __str__ = __repr__
 
     def full_title(self):

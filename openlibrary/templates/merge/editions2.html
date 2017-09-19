@@ -55,7 +55,11 @@ function use_value(k, ekey) {
             <td class="merged">
                 $if isinstance(merged.get(k), list):
                     $for i in merged[k]:
-                        $i<br>
+                        $if k == 'table_of_contents':
+                            <em>$i.get('label')</em>
+                            $i.get('title')<br>
+                        $else:
+                            $i<br>
                 $else:
                     $merged.get(k)
             </td>
@@ -68,8 +72,10 @@ function use_value(k, ekey) {
     <table>
 
     <p>
-        <button class="larger">Merge Editions</button>
+        <form method="post">
+        <button type="submit" class="larger">Merge Editions</button>
         <a href="javascript:history.go(-1);" class="small red sansserif">Cancel</a>
+        </form>
     </p>
 
 </div>
