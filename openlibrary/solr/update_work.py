@@ -25,8 +25,11 @@ logger = logging.getLogger("openlibrary.solr")
 
 re_lang_key = re.compile(r'^/(?:l|languages)/([a-z]{3})$')
 re_author_key = re.compile(r'^/(?:a|authors)/(OL\d+A)')
-#re_edition_key = re.compile(r'^/(?:b|books)/(OL\d+M)$')
+re_bad_char = re.compile('[\x01\x0b\x1a-\x1e]')
 re_edition_key = re.compile(r"/books/([^/]+)")
+re_iso_date = re.compile(r'^(\d{4})-\d\d-\d\d$')
+re_solr_field = re.compile('^[-\w]+$', re.U)
+re_year = re.compile(r'(\d{4})$')
 
 data_provider = None
 _ia_db = None
@@ -45,25 +48,15 @@ def urlopen(url, data=None):
 def get_solr():
     global solr_host
 
-    if not config.runtime_config:
-        config.load('openlibrary.yml')
-        config.load_config('openlibrary.yml')
+    load_config()
 
     if not solr_host:
         solr_host = config.runtime_config['plugin_worksearch']['solr']
 
     return solr_host
 
-def load_config():
-    if not config.runtime_config:
-        config.load('openlibrary.yml')
-        config.load_config('openlibrary.yml')
-
-re_collection = re.compile(r'<(collection|boxid)>(.*)</\1>', re.I)
-
 def get_ia_collection_and_box_id(ia):
-    """Returns a collection and box_id as a dictiodictionary with boxid and collection
-    """
+    """Returns a dictionary of boxid and collection."""
     if len(ia) == 1:
         return
 
@@ -87,9 +80,6 @@ def get_ia_collection_and_box_id(ia):
 class AuthorRedirect (Exception):
     pass
 
-re_bad_char = re.compile('[\x01\x0b\x1a-\x1e]')
-re_year = re.compile(r'(\d{4})$')
-re_iso_date = re.compile(r'^(\d{4})-\d\d-\d\d$')
 def strip_bad_char(s):
     if not isinstance(s, basestring):
         return s
@@ -108,9 +98,9 @@ def add_field_list(doc, name, field_list):
     for value in field_list:
         add_field(doc, name, value)
 
-to_drop = set(''';/?:@&=+$,<>#%"{}|\\^[]`\n\r''')
-
 def str_to_key(s):
+    #TODO: this exists in openlibrary/utils/__init__.py str_to_key(), DRY
+    to_drop = set(''';/?:@&=+$,<>#%"{}|\\^[]`\n\r''')
     return ''.join(c if c != ' ' else '_' for c in s.lower() if c not in to_drop)
 
 re_not_az = re.compile('[^a-zA-Z]')
@@ -187,8 +177,7 @@ def datetimestr_to_int(datestr):
     return int(time.mktime(t.timetuple()))
 
 class SolrProcessor:
-    """Processes data to into a form suitable for adding to works solr.
-    """
+    """Processes data into a form suitable for adding to works solr."""
     def __init__(self, obj_cache=None, resolve_redirects=False):
         if obj_cache is None:
             obj_cache = {}
@@ -244,7 +233,6 @@ class SolrProcessor:
         if isinstance(ia, list):
             ia = ia[0]
 
-
     def get_ia_id(self, edition):
         """Returns ia identifier from an edition dict.
         """
@@ -257,7 +245,6 @@ class SolrProcessor:
         if isinstance(value, basestring):
             return value
 
-
     def sanitize_edition(self, e):
         """Takes an edition and corrects bad data.
 
@@ -268,7 +255,6 @@ class SolrProcessor:
         """
         e["ia_loaded_id"] = self.ensure_list(e.get("ia_loaded_id"), basestring)
         e["ia_box_id"] = self.ensure_list(e.get("ia_box_id"), basestring)
-
 
     def ensure_list(self, value, elem_type):
         """Ensures that value is a list of elem_type elements.
@@ -451,7 +437,6 @@ class SolrProcessor:
 
         add('edition_count', len(editions))
 
-
         add_list("edition_key", [re_edition_key.match(e['key']).group(1) for e in editions])
         add_list("by_statement", set(e["by_statement"] for e in editions if "by_statement" in e))
 
@@ -487,7 +472,6 @@ class SolrProcessor:
             subjects['subject']['Protected DAISY'] = 1
 
         return d
-
 
     def get_alternate_titles(self, w, editions):
         result = set()
@@ -583,9 +567,6 @@ class SolrProcessor:
             add('lending_identifier_s', lending_ia_identifier)
         if printdisabled:
             add('printdisabled_s', ';'.join(list(printdisabled)))
-
-
-re_solr_field = re.compile('^[-\w]+$', re.U)
 
 def build_doc(w, obj_cache=None, resolve_redirects=False):
     if obj_cache is None:
@@ -696,7 +677,6 @@ def build_data2(w, editions, authors, ia, duplicates):
                 ia_box_id.update(e['ia_box_id'])
     if lang:
         add_field_list(doc, 'language', lang)
-
 
     #if lending_edition or in_library_edition:
     #    add_field(doc, "borrowed_b", is_borrowed(lending_edition or in_library_edition))
@@ -942,7 +922,6 @@ def update_edition(e):
     request_set.add(doc)
     return request_set.get_requests()
 
-
 def get_subject(key):
     subject_key = key.split("/")[-1]
 
@@ -1173,8 +1152,6 @@ def get_document(key):
         print >> sys.stderr, "Failed to get document from %s" % url
         print >> sys.stderr, "retry", i
 
-
-
 re_edition_key_basename = re.compile("^[a-zA-Z0-9:.-]+$")
 
 def solr_select_work(edition_key):
@@ -1200,7 +1177,7 @@ def update_keys(keys, commit=True, output_file=None):
     global data_provider
     global _ia_db
     if data_provider is None:
-        data_provider = get_data_provider('default',_ia_db)
+        data_provider = get_data_provider('default', _ia_db)
 
     wkeys = set()
 
@@ -1680,42 +1657,20 @@ def clear_monkeypatch_cache(max_size=10000):
 def solr_escape(query):
     return re.sub('([\s\-\+\!\(\)\|\&\{\}\[\]\^\"\|\&\~\*\?\:\\\\])', r'\\\1', query)
 
-
-def load_configs(config_file):
-    c_host = "http://openlibrary.org/"
-    c_config = config_file
-    c_data_provider = 'default'
-
-    host = web.lstrips(c_host, "http://").strip("/")
-    set_query_host(host)
-
-    # load config
-    config.load(c_config)
-    config.load_config(c_config)
-
-    global data_provider
-    global _ia_db
-    if data_provider is None:
-	data_provider = get_data_provider(c_data_provider,_ia_db)
-
-    return data_provider
-
-
 def do_updates(keys):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-
     update_keys(keys, commit=False)
 
-def load_configs(c_host,c_config,c_data_provider):
+def load_config(c_config='/openlibrary/conf/openlibrary.yml'):
+    if not config.runtime_config:
+        config.load(c_config)
+        config.load_config(c_config)
+
+def load_configs(c_host, c_config, c_data_provider='default'):
     host = web.lstrips(c_host, "http://").strip("/")
     set_query_host(host)
 
-    # load config
-    config.load(c_config)
-    config.load_config(c_config)
-
-    global conf_file
-    conf_file = c_config
+    load_config(c_config)
 
     global _ia_db
     if ('ia_db' in config.runtime_config.keys()):
@@ -1723,46 +1678,24 @@ def load_configs(c_host,c_config,c_data_provider):
 
     global data_provider
     if data_provider is None:
-       data_provider = get_data_provider(c_data_provider,_ia_db)
-
+        data_provider = get_data_provider(c_data_provider, _ia_db)
     return data_provider
 
-
-def do_updates(keys):
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-
-    update_keys(keys, commit=False)
-
 def get_ia_db(settings):
-        host = settings['host']
-        db = settings['db']
-        user = settings['user']
-        pw = os.popen(settings['pw_file']).read().strip()
-        ia_db = web.database(dbn="postgres", host=host, db=db, user=user, pw=pw)
-        return ia_db
+    host = settings['host']
+    db = settings['db']
+    user = settings['user']
+    pw = os.popen(settings['pw_file']).read().strip()
+    ia_db = web.database(dbn="postgres", host=host, db=db, user=user, pw=pw)
+    return ia_db
 
 def main():
     options, keys = parse_options()
 
-    # set query host
-    host = web.lstrips(options.server, "http://").strip("/")
-    set_query_host(host)
-
     if options.monkeypatch:
         monkeypatch(options.config)
 
-    # load config
-    config.load(options.config)
-    config.load_config(options.config)
-
-    global _ia_db
-    if ('ia_db' in config.runtime_config.keys()):
-	_ia_db = get_ia_db(config.runtime_config['ia_db'])
-
-    global data_provider
-    if data_provider is None:
-        data_provider = get_data_provider(options.data_provider,_ia_db)
-
+    load_configs(options.server, options.config, options.data_provdider)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
