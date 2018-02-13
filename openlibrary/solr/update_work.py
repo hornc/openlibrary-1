@@ -734,13 +734,18 @@ def solr_update(requests, debug=False, commitWithin=60000):
             logger.info('request: %r', r[:65] + '...' if len(r) > 65 else r)
         assert isinstance(r, basestring)
         h1.request('POST', url, r.encode('utf8'), { 'Content-type': 'text/xml;charset=utf-8'})
-        response = h1.getresponse()
-        response_body = response.read()
-        if response.reason != 'OK':
-            logger.error(response.reason)
-            logger.error(response_body)
-        if debug:
-            logger.info(response.reason)
+        try:
+            response = h1.getresponse()
+            response_body = response.read()
+            if response.reason != 'OK':
+                logger.error(response.reason)
+                logger.error(response_body)
+            if debug:
+                logger.info(response.reason)
+        except socket.timeout:
+            # Log recurring timeouts
+            logger.error('Request timed out: %r', r[:200] + '...' if len(r) > 200 else r)
+
     h1.close()
 
 def withKey_cached(key, obj_cache={}):
