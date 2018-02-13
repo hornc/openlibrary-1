@@ -1,5 +1,7 @@
 from openlibrary.solr import update_work
 from openlibrary.solr.update_work import build_data
+import logging
+logging.basicConfig(level=logging.INFO)
 
 author_counter = 0
 edition_counter = 0
@@ -311,3 +313,13 @@ class Test_update_items():
         assert del_work[0].toxml() == '<delete><query>key:/works/OL23W</query></delete>'
         assert isinstance(del_edition[0], update_work.DeleteRequest)
         assert del_edition[0].toxml() == '<delete><query>key:/works/OL23M</query></delete>'
+
+    def test_solr_update_escaping(self):
+        request = ["<delete><query>key:/works/ia\:privatedemons00judy</query></delete>"]
+        update_work.solr_update(request, True)
+        update_work.solr_update(['<commit/>'])
+
+    def test_solr_update_author(self):
+        request = ["<delete><query>key:/authors/OL200000A</query></delete>"]
+        update_work.solr_update(request, True)
+        update_work.solr_update(['<commit/>'])
