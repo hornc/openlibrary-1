@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Open Library VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-02-15 10:31+0000\n"
+"POT-Creation-Date: 2018-02-15 11:31+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: cs <LL@li.org>\n"
@@ -223,7 +223,7 @@ msgstr "Našli jsme <strong>%s výsledky</strong> které odpovídají vašemu za
 #: AuthorList.html:5 books/show.html:12 covers/book_cover.html:17
 #: covers/book_cover.html:36 covers/book_cover_single_edition.html:13
 #: covers/book_cover_single_edition.html:31 covers/book_cover_small.html:14
-#: covers/book_cover_work.html:13 covers/book_cover_work.html:27
+#: covers/book_cover_work.html:13 covers/book_cover_work.html:27 diff.html:36
 #: type/edition/view.html:197
 msgid "by"
 msgstr ""
@@ -536,7 +536,7 @@ msgid "Revision %d"
 msgstr "Verze %d"
 
 #: diff.html:38
-#, fuzzy, python-format
+#, fuzzy
 msgid "by Anonymous"
 msgstr "Anonymní uživatel"
 
@@ -716,9 +716,9 @@ msgid "%s is not found"
 msgstr "%s nebylo nalezeno"
 
 #: languages/notfound.html:6 notfound.html:10
-#, fuzzy, python-format
+#, fuzzy
 msgid "404 - Page Not Found"
-msgstr "%s nebylo nalezeno"
+msgstr "404 - nebylo nalezeno"
 
 #: languages/notfound.html:10 notfound.html:14
 #, fuzzy, python-format
