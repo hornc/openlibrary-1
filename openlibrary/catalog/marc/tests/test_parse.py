@@ -6,6 +6,7 @@ from openlibrary.catalog.marc.marc_xml import MarcXml, BadSubtag, BlankTag
 from lxml import etree
 import os
 import simplejson
+from unicodedata import normalize
 
 collection_tag = '{http://www.loc.gov/MARC21/slim}collection'
 record_tag = '{http://www.loc.gov/MARC21/slim}record'
@@ -57,6 +58,8 @@ class TestParse():
         expect_filename = "%s/bin_expect/%s" % (test_data, i)
         data = open("%s/bin_input/%s" % (test_data, i)).read()
         if len(data) != int(data[:5]):
+            #TODO: Why are we fixing this in test expectations? Investigate.
+            #      affects histoirereligieu05cr_meta.mrc and zweibchersatir01horauoft_meta.mrc
             data = data.decode('utf-8').encode('raw_unicode_escape')
         assert len(data) == int(data[:5])
         rec = MarcBinary(data)
@@ -70,6 +73,13 @@ class TestParse():
                 for item1, item2 in zip(edition_marc_bin[k], j[k]):
                     assert item1 == item2
             assert edition_marc_bin[k] == j[k]
+            # test normalized unicode
+            if k in ['title', 'by_statement', 'authors']:
+                item = edition_marc_bin[k]
+                if k == 'authors':
+                    item = item[0]['name']
+                assert isinstance(item, unicode)
+                assert item == normalize('NFC', item)
         assert edition_marc_bin == j
 
     def test_raises_see_also(self):
