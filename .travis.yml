@@ -3,6 +3,7 @@ sudo: false
 addons:
   apt:
     packages:
+      - libgeoip-dev
       - python-lxml
       - python-yaml
 python:
