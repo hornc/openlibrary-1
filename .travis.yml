@@ -3,11 +3,8 @@ sudo: false
 addons:
   apt:
     packages:
-      - libgeoip-dev
       - python-lxml
-      - python-psycopg2
       - python-yaml
-  postgresql: "9.3"
 python:
     - "2.7"
 install:
