@@ -6,7 +6,6 @@ import web
 
 import six
 
-from infogami.infobase.tests.pytest_wildcard import Wildcard
 from infogami.utils import template
 from infogami.utils.view import render_template as infobase_render_template
 from openlibrary.i18n import gettext
@@ -16,6 +15,23 @@ from openlibrary.mocks.mock_infobase import mock_site
 from openlibrary.mocks.mock_ia import mock_ia
 from openlibrary.mocks.mock_memcache import mock_memcache
 from openlibrary.mocks.mock_ol import ol
+
+class Wildcard:
+    """
+    Wildcard object is equal to anything.
+    Useful to compare datastructures which contain some random numbers or db sequences.
+
+        >>> import random
+        >>> assert [random.random(), 1, 2] == [wildcard, 1, 2]
+    """
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+    def __repr__(self):
+        return '<?>'
 
 @pytest.fixture(autouse=True)
 def no_requests(monkeypatch):
