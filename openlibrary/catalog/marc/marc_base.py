@@ -1,4 +1,5 @@
 import re
+from pymarc import Record
 
 re_isbn = re.compile(r'([^ ()]+[\dX])(?: \((?:v\. (\d+)(?: : )?)?(.*)\))?')
 # handle ISBN like: 1402563884c$26.95
@@ -32,5 +33,7 @@ class MarcBase(object):
         for tag, line in self.read_fields(want):
             self.fields.setdefault(tag, []).append(line)
 
-    def get_fields(self, tag):
-        return [self.decode_field(i) for i in self.fields.get(tag, [])]
+    def get_fields(self, *tags):
+        record = Record(data=self.data)
+        return record.get_fields(*tags)
+        #return [self.decode_field(i) for i in self.fields.get(tag, [])]
